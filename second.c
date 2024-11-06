@@ -1,81 +1,78 @@
 #include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 
-void swap(double* xp, double* yp) {
-    double temp;
-    temp = *xp;
-    *xp = *yp;
-    *yp = temp;
-}
+// Таблица для вычисления CRC32
+uint32_t crc32_table[256];
 
-void bubbleSort(double arr[], int n) {
-    int i, j;
-    bool swapped;
+// Функция для инициализации таблицы CRC32
+void init_crc32_table() {
+    uint32_t polynomial = 0xedb88320;
+    uint32_t i = 0;
 
-    i = 0;
-    start_outer:
-    if (i >= n - 1) goto end_outer;
-    j = 0;
-    swapped = false;
+init_loop:
+    if (i >= 256) goto end_init;
+    
+    uint32_t crc = i;
+    uint32_t j = 8;
 
-    start_inner:
-    if (j >= n - i - 1) goto end_inner;
-    if (arr[j] > arr[j + 1]) {
-        swap(&arr[j], &arr[j + 1]);
-        swapped = true;
+inner_loop:
+    if (j == 0) goto store_crc;
+    
+    if (crc & 1) {
+        crc = (crc >> 1);
+        crc ^= polynomial;
+    } else {
+        crc >>= 1;
     }
-    j++;
-    goto start_inner;
+    j--;
+    goto inner_loop;
 
-    end_inner:
-    if (!swapped) goto end_outer;
+store_crc:
+    crc32_table[i] = crc;
     i++;
-    goto start_outer;
+    goto init_loop;
 
-    end_outer:
+end_init:
     return;
 }
 
-void printArray(double* arr, int size) {
-    int i;
-    i = 0;
-    goto loop_start;
-    loop_body:
-    printf("%lf ", arr[i]);
-    i++;
-    if (i < size) goto loop_body;
-    printf("\n");
-    return;
-    loop_start:
-    goto loop_body;
+// Функция для вычисления CRC32
+uint32_t calculate_crc32(const char *data) {
+    uint32_t crc = 0xffffffff;
+
+data_loop:
+    if (*data == 0) goto end_data_loop;
+
+    uint8_t byte = *data;
+    data++;
+
+    crc = (crc >> 8);
+    crc ^= crc32_table[(crc ^ byte) & 0xff];
+
+    goto data_loop;
+
+end_data_loop:
+    return crc ^ 0xffffffff;
 }
 
-double* read_array(int* size) {
-    printf("Enter the size of the array: ");
-    scanf("%d", size);
-    double* m = malloc(sizeof(double) * (*size));
-    int i;
-    i = 0;
-    goto loop_start;
-    loop_body:
-    printf("m[%d]=", i);
-    scanf("%lf", &m[i]);
-    i++;
-    if (i < *size) goto loop_body;
-    return m;
-    loop_start:
-    goto loop_body;
-}
+int main() {
+    char input[256];
 
-int main()
-{
-    int n;
-    double *arr = read_array(&n);
-    bubbleSort(arr, n);
-    printf("Sorted array: \n");
-    printArray(arr, n);
-    free(arr);
+    // Инициализация таблицы CRC32
+    init_crc32_table();
+
+    // Запрос ввода строки
+    printf("Введите строку: ");
+    fgets(input, sizeof(input), stdin);
+
+    // Удаление символа новой строки, если он есть
+    input[strcspn(input, "\n")] = 0;
+
+    // Вычисление и вывод CRC32
+    uint32_t crc32_result = calculate_crc32(input);
+    printf("CRC32: %08x\n", crc32_result);
+
     return 0;
 }
 
