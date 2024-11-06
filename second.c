@@ -1,77 +1,33 @@
 #include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-
-// Таблица для вычисления CRC32
-uint32_t crc32_table[256];
-
-// Функция для инициализации таблицы CRC32
-void init_crc32_table() {
-    uint32_t polynomial = 0xedb88320;
-    uint32_t i = 0;
-
-init_loop:
-    if (i >= 256) goto end_init;
-    
-    uint32_t crc = i;
-    uint32_t j = 8;
-
-inner_loop:
-    if (j == 0) goto store_crc;
-    
-    if (crc & 1) {
-        crc = (crc >> 1);
-        crc ^= polynomial;
-    } else {
-        crc >>= 1;
-    }
-    j--;
-    goto inner_loop;
-
-store_crc:
-    crc32_table[i] = crc;
-    i++;
-    goto init_loop;
-
-end_init:
-    return;
-}
-
-// Функция для вычисления CRC32
-uint32_t calculate_crc32(const char *data) {
-    uint32_t crc = 0xffffffff;
-
-data_loop:
-    if (*data == 0) goto end_data_loop;
-
-    uint8_t byte = *data;
-    data++;
-
-    crc = (crc >> 8);
-    crc ^= crc32_table[(crc ^ byte) & 0xff];
-
-    goto data_loop;
-
-end_data_loop:
-    return crc ^ 0xffffffff;
-}
 
 int main() {
-    char input[256];
+    int number;
+    int is_prime = 1; // Предполагаем, что число простое
+    int i = 2;
 
-    // Инициализация таблицы CRC32
-    init_crc32_table();
+    printf("Введите число: ");
+    scanf("%d", &number);
 
-    // Запрос ввода строки
-    printf("Введите строку: ");
-    fgets(input, sizeof(input), stdin);
+    if (number <= 1) {
+        is_prime = 0; // Число не простое
+        goto end;
+    }
 
-    // Удаление символа новой строки, если он есть
-    input[strcspn(input, "\n")] = 0;
+loop:
+    if (i * i > number) goto end; // Если i^2 больше number, выходим из цикла
+    if (number % i == 0) {
+        is_prime = 0; // Найден делитель, число не простое
+        goto end;
+    }
+    i++; // Увеличиваем i
+    goto loop; // Возвращаемся к началу цикла
 
-    // Вычисление и вывод CRC32
-    uint32_t crc32_result = calculate_crc32(input);
-    printf("CRC32: %08x\n", crc32_result);
+end:
+    if (is_prime) {
+        printf("%d является простым числом.\n", number);
+    } else {
+        printf("%d не является простым числом.\n", number);
+    }
 
     return 0;
 }
